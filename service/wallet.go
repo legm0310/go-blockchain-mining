@@ -6,27 +6,41 @@ import (
 	"crypto/rand"
 	"errors"
 	"fmt"
-	"github.com/hacpy/go-ethereum/common/hexutil"
 
 	"blockchain-mining/types"
 
+	"github.com/hacpy/go-ethereum/common/hexutil"
 	"github.com/hacpy/go-ethereum/crypto"
 )
 
 func (s *Service) newWallet() (string, string, error) {
 	p256 := elliptic.P256()
-
 	if private, err := ecdsa.GenerateKey(p256, rand.Reader); err != nil {
 		return "", "", err
 	} else if private == nil {
 		return "", "", errors.New("private key is nil")
 	} else {
 		privateKeyBytes := crypto.FromECDSA(private)
-		hexutil.Encode(privateKeyBytes)
-		fmt.Println(hexutil.Encode(privateKeyBytes))
-	}
+		privateKey := hexutil.Encode(privateKeyBytes)
 
-	return "", "", nil
+		againPrivateKey, err := crypto.HexToECDSA(privateKey[2:])
+
+		if err != nil {
+			return "", "", err
+		}
+
+		cPublicKey := againPrivateKey.Public()
+		publicKeyECDSA, ok := cPublicKey.(*ecdsa.PublicKey)
+
+		if !ok {
+			return "", "", errors.New("error casting public key type")
+		}
+
+		publicKeyBytes := crypto.PubkeyToAddress(*publicKeyECDSA)
+		publicKey := hexutil.Encode(publicKeyBytes[:])
+
+		return privateKey, publicKey, nil
+	}
 }
 
 func (s *Service) MakeWallet() *types.Wallet {
