@@ -1,8 +1,9 @@
 package config
 
 import (
-	"github.com/naoina/toml"
 	"os"
+	
+	"github.com/naoina/toml"
 )
 
 type Config struct {
