@@ -1,9 +1,10 @@
 package main
 
 import (
-	"blockchain-mining/config"
 	"flag"
-	"fmt"
+
+	"blockchain-mining/app"
+	"blockchain-mining/config"
 )
 
 var (
@@ -13,8 +14,7 @@ var (
 
 func main() {
 	flag.Parse()
-
 	c := config.NewConfig(*configFlag)
-	fmt.Println(c.Info.Version)
-	fmt.Println("test")
+
+	app.NewApp(c)
 }
