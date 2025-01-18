@@ -2,8 +2,10 @@ package app
 
 import (
 	"bufio"
+	"errors"
 	"fmt"
 	"os"
+	"strings"
 	"time"
 
 	"blockchain-mining/config"
@@ -45,9 +47,35 @@ func NewApp(config *config.Config) {
 
 		for {
 			sc.Scan()
-			fmt.Println(sc.Text())
+
+			input := strings.Split(sc.Text(), " ")
+			if err = a.inputValueAssessment(input); err != nil {
+				a.log.Error("Failed to parse input", "err", err, "input", input)
+			}
 		}
 	}
+}
+
+func (a *App) inputValueAssessment(input []string) error {
+	msg := errors.New("check Use Case")
+	if len(input) == 0 {
+		return msg
+	} else {
+		switch input[0] {
+		case CreateWallet:
+			fmt.Println("CreateWallet in Switch")
+			a.service.MakeWallet()
+
+		case TransferCoin:
+			fmt.Println("TransferCoin in Switch")
+		case MintCoin:
+			fmt.Println("MintCoin in Switch")
+		default:
+			return msg
+		}
+		fmt.Println()
+	}
+	return nil
 }
 
 func useCase() {
