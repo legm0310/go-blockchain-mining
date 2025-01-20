@@ -36,22 +36,22 @@ func NewApp(config *config.Config) {
 
 	if a.repository, err = repository.NewRepository(a.config); err != nil {
 		panic(err)
-	} else {
-		a.service = service.NewService(a.config, a.repository)
+	}
 
-		a.log.Info("Module Started", "time", time.Now().Unix())
+	a.service = service.NewService(a.config, a.repository, 1)
 
-		sc := bufio.NewScanner(os.Stdin)
+	a.log.Info("Module Started", "time", time.Now().Unix())
 
-		useCase()
+	sc := bufio.NewScanner(os.Stdin)
 
-		for {
-			sc.Scan()
+	useCase()
 
-			input := strings.Split(sc.Text(), " ")
-			if err = a.inputValueAssessment(input); err != nil {
-				a.log.Error("Failed to parse input", "err", err, "input", input)
-			}
+	for {
+		sc.Scan()
+
+		input := strings.Split(sc.Text(), " ")
+		if err = a.inputValueAssessment(input); err != nil {
+			a.log.Error("Failed to parse input", "err", err, "input", input)
 		}
 	}
 }

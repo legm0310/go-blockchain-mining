@@ -14,6 +14,9 @@ type Repository struct {
 	client *mongo.Client
 	db     *mongo.Database
 
+	wallet *mongo.Collection
+	tx     *mongo.Collection
+
 	config *config.Config
 	log    log15.Logger
 }

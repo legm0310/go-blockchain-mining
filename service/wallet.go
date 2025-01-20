@@ -1,24 +1,23 @@
 package service
 
 import (
+	"blockchain-mining/types"
 	"crypto/ecdsa"
 	"crypto/elliptic"
 	"crypto/rand"
 	"errors"
-	"fmt"
-
-	"blockchain-mining/types"
 
 	"github.com/hacpy/go-ethereum/common/hexutil"
 	"github.com/hacpy/go-ethereum/crypto"
 )
 
-func (s *Service) newWallet() (string, string, error) {
+func (s *Service) newKeyPair() (string, string, error) {
 	p256 := elliptic.P256()
+
 	if private, err := ecdsa.GenerateKey(p256, rand.Reader); err != nil {
 		return "", "", err
 	} else if private == nil {
-		return "", "", errors.New("private key is nil")
+		return "", "", errors.New(types.PkNil)
 	} else {
 		privateKeyBytes := crypto.FromECDSA(private)
 		privateKey := hexutil.Encode(privateKeyBytes)
@@ -44,17 +43,14 @@ func (s *Service) newWallet() (string, string, error) {
 }
 
 func (s *Service) MakeWallet() *types.Wallet {
-
-	fmt.Println("들어옴")
 	var wallet types.Wallet
 	var err error
 
-	if wallet.PrivateKey, wallet.PublicKey, err = s.newWallet(); err != nil {
-		panic(err)
+	if wallet.PrivateKey, wallet.PublicKey, err = s.newKeyPair(); err != nil {
+		return nil
+	} else if err = s.repository.CreateNewWallet(&wallet); err != nil {
+		return nil
 	} else {
-		// TODO -> connect repository
 		return &wallet
 	}
-
-	return &wallet
 }
