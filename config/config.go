@@ -2,7 +2,7 @@ package config
 
 import (
 	"os"
-	
+
 	"github.com/naoina/toml"
 )
 
@@ -13,7 +13,8 @@ type Config struct {
 	}
 
 	Info struct {
-		Version string
+		Version    string
+		Difficulty int64
 	}
 }
 

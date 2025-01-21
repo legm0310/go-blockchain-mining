@@ -38,9 +38,9 @@ func NewApp(config *config.Config) {
 		panic(err)
 	}
 
-	a.service = service.NewService(a.config, a.repository, 1)
+	a.service = service.NewService(a.config, a.repository, a.config.Info.Difficulty)
 
-	a.log.Info("Module Started", "time", time.Now().Unix())
+	a.log.Info("Module Started", "time", time.Now().Unix(), "difficulty", a.config.Info.Difficulty)
 
 	sc := bufio.NewScanner(os.Stdin)
 
@@ -63,15 +63,19 @@ func (a *App) inputValueAssessment(input []string) error {
 	} else {
 		switch input[0] {
 		case CreateWallet:
-			fmt.Println("CreateWallet in Switch")
-			a.service.MakeWallet()
+			fmt.Println("Create Wallet -----------------")
+			if wallet := a.service.MakeWallet(); wallet == nil {
+				panic("Failed To Create Wallet")
+			} else {
+				fmt.Println("Success To Create Wallet")
+			}
 
 		case TransferCoin:
 			fmt.Println("TransferCoin in Switch")
 		case MintCoin:
 			fmt.Println("MintCoin in Switch")
 		default:
-			return msg
+			return errors.New("failed to find CLI order")
 		}
 		fmt.Println()
 	}
