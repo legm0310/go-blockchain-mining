@@ -1,11 +1,12 @@
 package service
 
 import (
-	"blockchain-mining/types"
 	"crypto/ecdsa"
 	"crypto/elliptic"
 	"crypto/rand"
 	"errors"
+
+	"blockchain-mining/types"
 
 	"github.com/hacpy/go-ethereum/common/hexutil"
 	"github.com/hacpy/go-ethereum/crypto"
@@ -22,14 +23,14 @@ func (s *Service) newKeyPair() (string, string, error) {
 		privateKeyBytes := crypto.FromECDSA(private)
 		privateKey := hexutil.Encode(privateKeyBytes)
 
-		againPrivateKey, err := crypto.HexToECDSA(privateKey[2:])
+		importedPrivateKey, err := crypto.HexToECDSA(privateKey[2:])
 
 		if err != nil {
 			return "", "", err
 		}
 
-		cPublicKey := againPrivateKey.Public()
-		publicKeyECDSA, ok := cPublicKey.(*ecdsa.PublicKey)
+		coordPublicKey := importedPrivateKey.Public()
+		publicKeyECDSA, ok := coordPublicKey.(*ecdsa.PublicKey)
 
 		if !ok {
 			return "", "", errors.New("error casting public key type")
@@ -37,7 +38,6 @@ func (s *Service) newKeyPair() (string, string, error) {
 
 		publicKeyBytes := crypto.PubkeyToAddress(*publicKeyECDSA)
 		publicKey := hexutil.Encode(publicKeyBytes[:])
-
 		return privateKey, publicKey, nil
 	}
 }

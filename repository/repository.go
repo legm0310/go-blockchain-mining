@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"time"
 
 	"blockchain-mining/config"
 
@@ -12,7 +13,6 @@ import (
 
 type Repository struct {
 	client *mongo.Client
-	db     *mongo.Database
 
 	wallet *mongo.Collection
 	tx     *mongo.Collection
@@ -30,19 +30,19 @@ func NewRepository(config *config.Config) (*Repository, error) {
 	var err error
 	ctx := context.Background()
 
-	mConfig := config.Mongo
-
-	if r.client, err = mongo.Connect(ctx, options.Client().ApplyURI(mConfig.Uri)); err != nil {
-		r.log.Error("failed to connect to mongo", "uri", mConfig.Uri)
+	if r.client, err = mongo.Connect(ctx, options.Client().ApplyURI(config.Mongo.Uri)); err != nil {
+		r.log.Error("Failed to connect to mongo", "config", config.Mongo.Uri, "err", err)
 		return nil, err
 	} else if err = r.client.Ping(ctx, nil); err != nil {
-		r.log.Error("failed to ping mongo", "uri", mConfig.Uri)
+		r.log.Error("Failed to ping mongo", "err", err)
 		return nil, err
 	} else {
-		r.db = r.client.Database(mConfig.Uri)
+		db := r.client.Database(config.Mongo.DB, nil)
 
-		r.log.Info("success to connect Repository", "uri", mConfig.Uri, "db", mConfig.DB)
+		r.wallet = db.Collection("wallet")
+		r.tx = db.Collection("tx")
 
+		r.log.Info("Success To Connect Repository", "info", time.Now().Unix(), "repository", config.Mongo.Uri, "db", db)
 		return r, nil
 	}
 }
