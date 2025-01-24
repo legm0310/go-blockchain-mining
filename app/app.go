@@ -1,9 +1,11 @@
 package app
 
 import (
+	"blockchain-mining/global"
 	"bufio"
 	"errors"
 	"fmt"
+	"go.mongodb.org/mongo-driver/mongo"
 	"os"
 	"strings"
 	"time"
@@ -47,8 +49,15 @@ func NewApp(config *config.Config) {
 	useCase()
 
 	for {
-		sc.Scan()
 
+		from := global.FROM()
+
+		if from != "" {
+			a.log.Info("Current Connected Wallet", "from", from)
+			fmt.Println()
+		}
+
+		sc.Scan()
 		input := strings.Split(sc.Text(), " ")
 		if err = a.inputValueAssessment(input); err != nil {
 			a.log.Error("Failed to parse input", "err", err, "input", input)
@@ -61,23 +70,67 @@ func (a *App) inputValueAssessment(input []string) error {
 	if len(input) == 0 {
 		return msg
 	} else {
+		from := global.FROM()
+
 		switch input[0] {
+		case TransferCoin:
+			fmt.Println("TransferCoin in Switch")
+
+		case MintCoin:
+			fmt.Println("MintCoin in Switch")
+
 		case CreateWallet:
-			fmt.Println("Create Wallet -----------------")
 			if wallet := a.service.MakeWallet(); wallet == nil {
 				panic("Failed To Create Wallet")
 			} else {
-				fmt.Println("Success To Create Wallet")
+				fmt.Println()
+				a.log.Info("Success To Create Wallet", "PrivateKey", wallet.PrivateKey, "PublicKey", wallet.PublicKey)
+				fmt.Println()
 			}
 
-		case TransferCoin:
-			fmt.Println("TransferCoin in Switch")
-		case MintCoin:
-			fmt.Println("MintCoin in Switch")
+		case ConnectWallet:
+			if from != "" {
+				a.log.Debug("Already Connected", "from", from)
+				fmt.Println()
+			} else {
+				if wallet, err := a.service.GetWallet(input[1]); err != nil {
+					if err == mongo.ErrNoDocuments {
+						a.log.Debug("Failed To Find Wallet PK is Nil", "PrivateKey", input[1])
+					} else {
+						a.log.Crit("Failed To Find Wallet", "PrivateKey", input[1], "err", err)
+					}
+					fmt.Println()
+				} else {
+					global.SetFrom(wallet.PublicKey)
+					fmt.Println()
+					a.log.Info("Success To Connect Wallet", "from", wallet.PublicKey)
+					fmt.Println()
+				}
+			}
+
+		case ChangeWallet:
+			if from == "" {
+				a.log.Debug("Connect Wallet First")
+				fmt.Println()
+			} else {
+				if wallet, err := a.service.GetWallet(input[1]); err != nil {
+					if err == mongo.ErrNoDocuments {
+						a.log.Debug("Failed To Find Wallet PK is Nil", "PrivateKey", input[1])
+					} else {
+						a.log.Crit("Failed To Find Wallet", "PrivateKey", input[1], "err", err)
+					}
+				} else {
+					global.SetFrom(wallet.PublicKey)
+					fmt.Println()
+					a.log.Info("Success To Change Wallet", "from", wallet.PublicKey)
+					fmt.Println()
+				}
+			}
+		case "":
+			fmt.Println()
 		default:
 			return errors.New("failed to find CLI order")
 		}
-		fmt.Println()
 	}
 	return nil
 }
@@ -90,7 +143,9 @@ func useCase() {
 	fmt.Println("Use Case")
 
 	fmt.Println("1. ", CreateWallet)
-	fmt.Println("2. ", TransferCoin, " <To> <Amount>")
-	fmt.Println("3. ", MintCoin, " <To> <Amount>")
+	fmt.Println("2. ", ConnectWallet, " <PK>")
+	fmt.Println("3. ", ChangeWallet, " <PK>")
+	fmt.Println("4. ", TransferCoin, " <To> <Amount>")
+	fmt.Println("5. ", MintCoin, " <To> <Amount>")
 	fmt.Println()
 }
