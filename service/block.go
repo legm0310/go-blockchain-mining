@@ -19,7 +19,7 @@ import (
 func (s *Service) CreateBlock(txs []*types.Transaction, prevHash []byte, height int64) *types.Block {
 	var pHash []byte
 
-	if latestBlock, err := s.repository.GetLatestBlock(); err == nil {
+	if latestBlock, err := s.repository.GetLatestBlock(); err != nil {
 		if err == mongo.ErrNoDocuments {
 			s.log.Info("Genesis Block Will Be Created")
 
