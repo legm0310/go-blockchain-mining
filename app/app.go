@@ -28,7 +28,7 @@ type App struct {
 	log log15.Logger
 }
 
-func NewApp(config *config.Config) {
+func NewApp(config *config.Config, difficulty int64) {
 	a := &App{
 		config: config,
 		log:    log15.New("module", "app"),
@@ -40,9 +40,9 @@ func NewApp(config *config.Config) {
 		panic(err)
 	}
 
-	a.service = service.NewService(a.config, a.repository, a.config.Info.Difficulty)
+	a.service = service.NewService(a.config, a.repository, difficulty)
 
-	a.log.Info("Module Started", "time", time.Now().Unix(), "difficulty", a.config.Info.Difficulty)
+	a.log.Info("Module Started", "time", time.Now().Unix(), "difficulty", difficulty)
 
 	sc := bufio.NewScanner(os.Stdin)
 
@@ -74,7 +74,7 @@ func (a *App) inputValueAssessment(input []string) error {
 
 		switch input[0] {
 		case TransferCoin:
-			fmt.Println("TransferCoin in Switch")
+			a.service.CreateBlock([]*Transaction{}, []byte{}, 0)
 
 		case MintCoin:
 			fmt.Println("MintCoin in Switch")

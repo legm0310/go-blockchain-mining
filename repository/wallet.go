@@ -3,7 +3,7 @@ package repository
 import (
 	"context"
 	"time"
-	
+
 	"blockchain-mining/types"
 
 	"go.mongodb.org/mongo-driver/bson"
@@ -23,5 +23,19 @@ func (r *Repository) CreateNewWallet(wallet *types.Wallet) error {
 		return err
 	} else {
 		return nil
+	}
+}
+
+func (r *Repository) GetWallet(pk string) (*types.Wallet, error) {
+	ctx := context.Background()
+
+	filter := bson.M{"privateKey": pk}
+
+	var wallet types.Wallet
+
+	if err := r.wallet.FindOne(ctx, filter, options.FindOne()).Decode(&wallet); err != nil {
+		return nil, err
+	} else {
+		return &wallet, nil
 	}
 }
