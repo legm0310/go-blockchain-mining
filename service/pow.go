@@ -54,7 +54,7 @@ func (p *PowWork) makeHash(nonce int) []byte {
 	return bytes.Join(
 		[][]byte{
 			p.Block.PrevHash,
-			// TODO make Transaction To Byte
+			HashTransactions(p.Block),
 			intToHex(p.Difficulty),
 			intToHex(int64(nonce)),
 		},

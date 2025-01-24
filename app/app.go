@@ -74,6 +74,8 @@ func (a *App) inputValueAssessment(input []string) error {
 
 		switch input[0] {
 		case TransferCoin:
+			to := input[1]
+			amount := input[2]
 			a.service.CreateBlock([]*Transaction{}, []byte{}, 0)
 
 		case MintCoin:
