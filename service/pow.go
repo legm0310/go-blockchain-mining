@@ -5,8 +5,10 @@ import (
 	"crypto/sha256"
 	"encoding/binary"
 	"fmt"
-	"github.com/hacpy/go-ethereum/common/math"
 	"math/big"
+
+	"github.com/hacpy/go-ethereum/common/hexutil"
+	"github.com/hacpy/go-ethereum/common/math"
 
 	"blockchain-mining/types"
 )
@@ -24,7 +26,7 @@ func (s *Service) NewPow(b *types.Block) *PowWork {
 	return &PowWork{Block: b, Target: t, Difficulty: s.difficulty}
 }
 
-func (p *PowWork) RunMining() (int64, []byte) {
+func (p *PowWork) RunMining() (int64, string) {
 	var iHash big.Int
 	var hash [32]byte
 
@@ -47,13 +49,13 @@ func (p *PowWork) RunMining() (int64, []byte) {
 
 	fmt.Println()
 
-	return int64(nonce), hash[:]
+	return int64(nonce), hexutil.Encode(hash[:])
 }
 
 func (p *PowWork) makeHash(nonce int) []byte {
 	return bytes.Join(
 		[][]byte{
-			p.Block.PrevHash,
+			[]byte(p.Block.PrevHash),
 			HashTransactions(p.Block),
 			intToHex(p.Difficulty),
 			intToHex(int64(nonce)),
