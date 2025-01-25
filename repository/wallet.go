@@ -50,3 +50,18 @@ func (r *Repository) GetWalletByPublicKey(publicKey string) (*types.Wallet, erro
 		return &wallet, nil
 	}
 }
+
+func (r *Repository) UpsertWhenTransfer(to, value string) error {
+	ctx := context.Background()
+
+	opt := options.Update().SetUpsert(true)
+
+	filter := bson.M{"privateKey": to}
+	update := bson.M{"$set": bson.M{"balance": value}}
+
+	if _, err := r.wallet.UpdateOne(ctx, filter, update, opt); err != nil {
+		return err
+	} else {
+		return nil
+	}
+}

@@ -43,7 +43,9 @@ func (s *Service) newKeyPair() (string, string, error) {
 }
 
 func (s *Service) MakeWallet() *types.Wallet {
-	var wallet types.Wallet
+	wallet := types.Wallet{
+		Balance: "",
+	}
 	var err error
 
 	if wallet.PrivateKey, wallet.PublicKey, err = s.newKeyPair(); err != nil {

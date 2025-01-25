@@ -9,10 +9,10 @@ import (
 	"fmt"
 	"time"
 
+	"blockchain-mining/types"
 	"github.com/hacpy/go-ethereum/common"
 	"github.com/hacpy/go-ethereum/crypto"
-
-	"blockchain-mining/types"
+	"github.com/shopspring/decimal"
 
 	"go.mongodb.org/mongo-driver/mongo"
 )
@@ -46,7 +46,24 @@ func (s *Service) CreateBlock(from, to, value string) {
 			if wallet, err := s.repository.GetWalletByPublicKey(from); err != nil {
 				panic(err)
 			} else {
-				// TODO -> from의 밸런스 체크
+				// from 밸런스 체크
+				fromDecimalBalance, _ := decimal.NewFromString(wallet.Balance)
+				valueDecimal, _ := decimal.NewFromString(value)
+
+				if fromDecimalBalance.Cmp(valueDecimal) == -1 {
+					s.log.Debug("Failed to transfer coin by From Balance", "from", from, "balance", wallet.Balance, "value", value)
+					return
+				} else {
+					fromDecimalBalance.Sub(valueDecimal)
+					wallet.Balance = fromDecimalBalance.String()
+				}
+
+				if err = s.repository.CreateNewWallet(wallet); err != nil {
+					panic(err)
+				} else {
+
+				}
+
 				tx = createTransaction("TransferCoin", from, wallet.PrivateKey, to, value, 1)
 			}
 		}
