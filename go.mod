@@ -6,6 +6,7 @@ require (
 	github.com/hacpy/go-ethereum v1.14.1
 	github.com/inconshreveable/log15 v2.16.0+incompatible
 	github.com/naoina/toml v0.1.2-0.20170918210437-9fafd6967416
+	github.com/shopspring/decimal v1.4.0
 	go.mongodb.org/mongo-driver v1.17.2
 )
 
