@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/hacpy/go-ethereum/common"
 	"github.com/hacpy/go-ethereum/crypto"
 
 	"blockchain-mining/types"
@@ -16,42 +17,55 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
-func (s *Service) CreateBlock(txs []*types.Transaction, prevHash []byte, height int64) *types.Block {
-	var pHash []byte
-
-	if latestBlock, err := s.repository.GetLatestBlock(); err != nil {
+func (s *Service) CreateBlock(from, to, value string) {
+	var block *types.Block
+	if latestBlock, err := s.repository.GetLatestBlock(); err == nil {
 		if err == mongo.ErrNoDocuments {
 			s.log.Info("Genesis Block Will Be Created")
-
 			genesisMessage := "This is First Genesis Block"
-			tx := createTransaction(genesisMessage, "0x7ce062a2aae399c6db5014ef682af37ff1ba0d58", "", "", 1)
+			// TODO-> privateKey
 
-			newBlock := createBlockInner([]*types.Transaction{tx}, pHash, height)
-			pow := s.NewPow(newBlock)
-
-			newBlock.Nonce, newBlock.Hash = pow.RunMining()
-
-			return newBlock
-		} else {
-			s.log.Crit("Failed to get latest block", "err", err)
-			panic(err)
+			if pk, _, err := s.newKeyPair(); err != nil {
+				panic(err)
+			} else {
+				tx := createTransaction(genesisMessage, common.Address{}.String(), pk, to, value, 1)
+				block = createBlockInner([]*types.Transaction{tx}, "", 1)
+			}
 		}
 	} else {
-		pHash = latestBlock.Hash
+		var tx *types.Transaction
+		if common.HexToAddress(from) == (common.Address{}) {
+			// Mint
+			if pk, _, err := s.newKeyPair(); err != nil {
+				panic(err)
+			} else {
+				tx = createTransaction("MintCoin", common.Address{}.String(), pk, to, value, 1)
+			}
+		} else {
+			// Transfer
+			if wallet, err := s.repository.GetWalletByPublicKey(from); err != nil {
+				panic(err)
+			} else {
+				// TODO -> from의 밸런스 체크
+				tx = createTransaction("TransferCoin", from, wallet.PrivateKey, to, value, 1)
+			}
+		}
 
-		newBlock := createBlockInner(txs, pHash, height)
-		pow := s.NewPow(newBlock)
+		block = createBlockInner([]*types.Transaction{tx}, latestBlock.Hash, latestBlock.Height+1)
+	}
 
-		newBlock.Nonce, newBlock.Hash = pow.RunMining()
-		
-		return newBlock
+	pow := s.NewPow(block)
+	block.Nonce, block.Hash = pow.RunMining()
+
+	if err := s.repository.SaveBlock(block); err != nil {
+		panic(err)
 	}
 }
 
-func createBlockInner(txs []*types.Transaction, prevHash []byte, height int64) *types.Block {
+func createBlockInner(txs []*types.Transaction, prevHash string, height int64) *types.Block {
 	return &types.Block{
 		Time:         time.Now().Unix(),
-		Hash:         []byte{},
+		Hash:         "",
 		Transactions: txs,
 		PrevHash:     prevHash,
 		Nonce:        0,
@@ -59,7 +73,7 @@ func createBlockInner(txs []*types.Transaction, prevHash []byte, height int64) *
 	}
 }
 
-func createTransaction(message, from, to, amount string, block int64) *types.Transaction {
+func createTransaction(message, from, pk, to, amount string, block int64) *types.Transaction {
 	data := struct {
 		Message string `json:"message"`
 		From    string `json:"from"`
@@ -71,11 +85,10 @@ func createTransaction(message, from, to, amount string, block int64) *types.Tra
 		To:      to,
 		Amount:  amount,
 	}
-
+	fmt.Println(pk)
 	dataToSign := fmt.Sprintf("%x\n", data)
 
-	pk := "b18c7a77961e7dde666b6caa8aedae1a8f7e802ea985fbb9a49ee4d0fc7bdb86"
-	if ecdsaPrivateKey, err := crypto.HexToECDSA(pk); err != nil {
+	if ecdsaPrivateKey, err := crypto.HexToECDSA(pk[2:]); err != nil {
 		panic(err)
 	} else if r, s, err := ecdsa.Sign(rand.Reader, ecdsaPrivateKey, []byte(dataToSign)); err != nil {
 		panic(err)

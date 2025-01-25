@@ -1,22 +1,23 @@
 package app
 
 import (
-	"blockchain-mining/global"
 	"bufio"
 	"errors"
 	"fmt"
-	"go.mongodb.org/mongo-driver/mongo"
 	"os"
 	"strings"
 	"time"
 
 	"blockchain-mining/config"
+	"blockchain-mining/global"
 	"blockchain-mining/repository"
 	"blockchain-mining/service"
 
 	. "blockchain-mining/types"
 
+	"github.com/hacpy/go-ethereum/common"
 	"github.com/inconshreveable/log15"
+	"go.mongodb.org/mongo-driver/mongo"
 )
 
 type App struct {
@@ -74,12 +75,29 @@ func (a *App) inputValueAssessment(input []string) error {
 
 		switch input[0] {
 		case TransferCoin:
-			to := input[1]
-			amount := input[2]
-			a.service.CreateBlock([]*Transaction{}, []byte{}, 0)
+
+			if from == "" {
+				fmt.Println()
+				a.log.Debug("Not Connected Wallet Connect Wallet First")
+				fmt.Println()
+			} else if input[1] != "" || input[2] != "" {
+				fmt.Println()
+				a.log.Debug("Request value, to is unCorrect")
+				fmt.Println()
+			} else {
+				a.service.CreateBlock(from, input[1], input[2])
+			}
 
 		case MintCoin:
-			fmt.Println("MintCoin in Switch")
+
+			if input[1] != "" || input[2] != "" {
+				fmt.Println()
+				a.log.Debug("Request value, to is unCorrect")
+				fmt.Println()
+			} else {
+				// common Address
+				a.service.CreateBlock((common.Address{}).String(), input[1], input[2])
+			}
 
 		case CreateWallet:
 			if wallet := a.service.MakeWallet(); wallet == nil {
@@ -112,7 +130,8 @@ func (a *App) inputValueAssessment(input []string) error {
 
 		case ChangeWallet:
 			if from == "" {
-				a.log.Debug("Connect Wallet First")
+				fmt.Println()
+				a.log.Debug("Not Connected Wallet Connect Wallet First")
 				fmt.Println()
 			} else {
 				if wallet, err := a.service.GetWallet(input[1]); err != nil {
