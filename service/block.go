@@ -7,6 +7,7 @@ import (
 	"encoding/gob"
 	"encoding/hex"
 	"fmt"
+	"strings"
 	"time"
 
 	"blockchain-mining/types"
@@ -19,11 +20,12 @@ import (
 
 func (s *Service) CreateBlock(from, to, value string) {
 	var block *types.Block
-	if latestBlock, err := s.repository.GetLatestBlock(); err == nil {
+	toBalance := "0"
+
+	if latestBlock, err := s.repository.GetLatestBlock(); err != nil {
 		if err == mongo.ErrNoDocuments {
 			s.log.Info("Genesis Block Will Be Created")
 			genesisMessage := "This is First Genesis Block"
-			// TODO-> privateKey
 
 			if pk, _, err := s.newKeyPair(); err != nil {
 				panic(err)
@@ -31,22 +33,25 @@ func (s *Service) CreateBlock(from, to, value string) {
 				tx := createTransaction(genesisMessage, common.Address{}.String(), pk, to, value, 1)
 				block = createBlockInner([]*types.Transaction{tx}, "", 1)
 			}
+		} else {
+			panic(err)
 		}
 	} else {
 		var tx *types.Transaction
+
 		if common.HexToAddress(from) == (common.Address{}) {
 			// Mint
 			if pk, _, err := s.newKeyPair(); err != nil {
 				panic(err)
 			} else {
 				tx = createTransaction("MintCoin", common.Address{}.String(), pk, to, value, 1)
+				toBalance = value
 			}
 		} else {
 			// Transfer
 			if wallet, err := s.repository.GetWalletByPublicKey(from); err != nil {
 				panic(err)
 			} else {
-				// from 밸런스 체크
 				fromDecimalBalance, _ := decimal.NewFromString(wallet.Balance)
 				valueDecimal, _ := decimal.NewFromString(value)
 
@@ -58,23 +63,22 @@ func (s *Service) CreateBlock(from, to, value string) {
 					wallet.Balance = fromDecimalBalance.String()
 				}
 
-				if err = s.repository.CreateNewWallet(wallet); err != nil {
-					panic(err)
-				} else {
-
-				}
+				//// TODO -> 쿼리 전송 순서 체크
+				//if err = s.repository.CreateNewWallet(wallet); err != nil {
+				//	panic(err)
+				//}
 
 				tx = createTransaction("TransferCoin", from, wallet.PrivateKey, to, value, 1)
 			}
 		}
-
 		block = createBlockInner([]*types.Transaction{tx}, latestBlock.Hash, latestBlock.Height+1)
 	}
-
 	pow := s.NewPow(block)
 	block.Nonce, block.Hash = pow.RunMining()
 
-	if err := s.repository.SaveBlock(block); err != nil {
+	if err := s.repository.UpsertWalletsWhenTransfer(from, to, value, toBalance); err != nil {
+		panic(err)
+	} else if err := s.repository.SaveBlock(block); err != nil {
 		panic(err)
 	}
 }
@@ -102,10 +106,10 @@ func createTransaction(message, from, pk, to, amount string, block int64) *types
 		To:      to,
 		Amount:  amount,
 	}
-	fmt.Println(pk)
+
 	dataToSign := fmt.Sprintf("%x\n", data)
 
-	if ecdsaPrivateKey, err := crypto.HexToECDSA(pk[2:]); err != nil {
+	if ecdsaPrivateKey, err := crypto.HexToECDSA(strings.TrimPrefix(pk, "0x")); err != nil {
 		panic(err)
 	} else if r, s, err := ecdsa.Sign(rand.Reader, ecdsaPrivateKey, []byte(dataToSign)); err != nil {
 		panic(err)

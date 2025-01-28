@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"github.com/hacpy/go-ethereum/common"
 	"time"
 
 	"blockchain-mining/types"
@@ -51,17 +52,26 @@ func (r *Repository) GetWalletByPublicKey(publicKey string) (*types.Wallet, erro
 	}
 }
 
-func (r *Repository) UpsertWhenTransfer(to, value string) error {
+func (r *Repository) UpsertWalletsWhenTransfer(from, to, fromBalance, toBalance string) error {
 	ctx := context.Background()
-
 	opt := options.Update().SetUpsert(true)
 
-	filter := bson.M{"privateKey": to}
-	update := bson.M{"$set": bson.M{"balance": value}}
+	if from != (common.Address{}.String()) {
+		filter := bson.M{"publicKey": from}
+		update := bson.M{"$set": bson.M{"balance": fromBalance}}
 
-	if _, err := r.wallet.UpdateOne(ctx, filter, update, opt); err != nil {
-		return err
-	} else {
-		return nil
+		_, err := r.wallet.UpdateOne(ctx, filter, update, opt)
+		if err != nil {
+			return err
+		}
 	}
+	filter := bson.M{"publicKey": to}
+	update := bson.M{"$set": bson.M{"balance": toBalance}}
+	_, err := r.wallet.UpdateOne(ctx, filter, update, opt)
+
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

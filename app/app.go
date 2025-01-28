@@ -90,12 +90,11 @@ func (a *App) inputValueAssessment(input []string) error {
 
 		case MintCoin:
 
-			if input[1] != "" || input[2] != "" {
+			if input[1] == "" || input[2] == "" {
 				fmt.Println()
 				a.log.Debug("Request value, to is unCorrect")
 				fmt.Println()
 			} else {
-				// common Address
 				a.service.CreateBlock((common.Address{}).String(), input[1], input[2])
 			}
 
