@@ -50,14 +50,6 @@ func NewApp(config *config.Config, difficulty int64) {
 	useCase()
 
 	for {
-
-		from := global.FROM()
-
-		if from != "" {
-			a.log.Info("Current Connected Wallet", "from", from)
-			fmt.Println()
-		}
-
 		sc.Scan()
 		input := strings.Split(sc.Text(), " ")
 		if err = a.inputValueAssessment(input); err != nil {
@@ -80,7 +72,7 @@ func (a *App) inputValueAssessment(input []string) error {
 				fmt.Println()
 				a.log.Debug("Not Connected Wallet Connect Wallet First")
 				fmt.Println()
-			} else if input[1] != "" || input[2] != "" {
+			} else if input[1] == "" || input[2] == "" {
 				fmt.Println()
 				a.log.Debug("Request value, to is unCorrect")
 				fmt.Println()

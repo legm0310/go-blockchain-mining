@@ -51,7 +51,7 @@ func (s *Service) CreateBlock(from, to, value string) {
 			// Transfer
 			if wallet, err := s.repository.GetWalletByPublicKey(from); err != nil {
 				panic(err)
-			} else if _, err := s.repository.GetWalletByPublicKey(to); err != nil {
+			} else if toWallet, err := s.repository.GetWalletByPublicKey(to); err != nil {
 				if err == mongo.ErrNoDocuments {
 					s.log.Debug("Can't Find To Wallet", "to", to)
 				} else {
@@ -62,19 +62,18 @@ func (s *Service) CreateBlock(from, to, value string) {
 				//from 주소에서 Balance가 있는지
 				fromDecimalBalance, _ := decimal.NewFromString(wallet.Balance)
 				valueDecimal, _ := decimal.NewFromString(value)
+				toDecimalBalance, _ := decimal.NewFromString(toWallet.Balance)
 
 				if fromDecimalBalance.Cmp(valueDecimal) == -1 {
 					s.log.Debug("Failed to transfer coin by From Balance", "from", from, "balance", wallet.Balance, "value", value)
 					return
 				} else {
-					toBalance = value
-					fromDecimalBalance.Sub(valueDecimal)
+					toDecimalBalance = toDecimalBalance.Add(valueDecimal)
+					toBalance = toDecimalBalance.String()
+
+					fromDecimalBalance = fromDecimalBalance.Sub(valueDecimal)
 					value = fromDecimalBalance.String()
 				}
-				//// TODO -> 쿼리 전송 순서 체크
-				//if err = s.repository.CreateNewWallet(wallet); err != nil {
-				//	panic(err)
-				//}
 
 				tx = createTransaction("TransferCoin", from, wallet.PrivateKey, to, value, 1)
 			}
