@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"blockchain-mining/types"
+
 	"github.com/hacpy/go-ethereum/common"
 	"github.com/hacpy/go-ethereum/crypto"
 	"github.com/shopspring/decimal"
@@ -44,8 +45,15 @@ func (s *Service) CreateBlock(from, to, value string) {
 			if pk, _, err := s.newKeyPair(); err != nil {
 				panic(err)
 			} else {
-				tx = createTransaction("MintCoin", common.Address{}.String(), pk, to, value, 1)
-				toBalance = value
+				if wallet, err := s.repository.GetWalletByPublicKey(to); err != nil {
+					panic(err)
+				} else {
+					walletDecimal, _ := decimal.NewFromString(wallet.Balance)
+					valueDecimal, _ := decimal.NewFromString(value)
+
+					tx = createTransaction("MintCoin", common.Address{}.String(), pk, to, value, 1)
+					toBalance = walletDecimal.Add(valueDecimal).String()
+				}
 			}
 		} else {
 			// Transfer
