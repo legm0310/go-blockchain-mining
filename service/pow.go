@@ -30,10 +30,11 @@ func (p *PowWork) RunMining() (int64, string) {
 	var iHash big.Int
 	var hash [32]byte
 
+	merkleRoot := HashTransactions(p.Block)
 	nonce := 0
 
 	for nonce < math.MaxInt64 {
-		d := p.makeHash(nonce)
+		d := p.getBytesForHash(merkleRoot, nonce)
 		hash = sha256.Sum256(d)
 
 		fmt.Printf("\r%x", hash)
@@ -47,16 +48,14 @@ func (p *PowWork) RunMining() (int64, string) {
 		}
 	}
 
-	fmt.Println()
-
 	return int64(nonce), hexutil.Encode(hash[:])
 }
 
-func (p *PowWork) makeHash(nonce int) []byte {
+func (p *PowWork) getBytesForHash(merkleRoot []byte, nonce int) []byte {
 	return bytes.Join(
 		[][]byte{
 			[]byte(p.Block.PrevHash),
-			HashTransactions(p.Block),
+			merkleRoot,
 			intToHex(p.Difficulty),
 			intToHex(int64(nonce)),
 		},
